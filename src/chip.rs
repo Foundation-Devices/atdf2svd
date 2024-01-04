@@ -19,13 +19,14 @@ pub struct Chip {
 pub struct Peripheral {
     pub name: String,
     pub description: Option<String>,
-
+    pub base_address: Option<usize>,
     pub registers: BTreeMap<String, Register>,
 }
 
 impl Peripheral {
     pub fn base_address(&self) -> Option<usize> {
-        self.registers.values().map(|r| r.address).min()
+        self.base_address
+            .or_else(|| self.registers.values().map(|r| r.address).min())
     }
 }
 

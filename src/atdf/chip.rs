@@ -16,6 +16,7 @@ pub fn parse(el: &xmltree::Element) -> crate::Result<chip::Chip> {
     let peripherals = atdf::peripheral::parse_list(
         device.first_child("peripherals")?,
         el.first_child("modules")?,
+        device.first_child("address-spaces")?,
     )?
     .into_iter()
     .map(|p| (p.name.clone(), p))

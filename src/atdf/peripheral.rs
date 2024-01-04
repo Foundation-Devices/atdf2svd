@@ -6,6 +6,7 @@ use crate::ElementExt;
 pub fn parse_list(
     el: &xmltree::Element,
     modules: &xmltree::Element,
+    address_spaces: &xmltree::Element,
 ) -> crate::Result<Vec<chip::Peripheral>> {
     let mut peripherals = vec![];
 
@@ -13,6 +14,7 @@ pub fn parse_list(
         let module_name = module.attr("name")?;
 
         for instance in module.iter_children_with_name("instance", Some("module")) {
+            let mut base_address = None;
             let mut registers = vec![];
 
             // Find corresponding module
@@ -34,6 +36,21 @@ pub fn parse_list(
 
                 for register in group.iter_children_with_name("register", Some("register-group")) {
                     registers.push(atdf::register::parse(register, offset, &value_groups)?);
+                }
+
+                let address_space_name = register_group.attr("address-space")?;
+                let address_space = address_spaces
+                    .iter_children_with_name("address-space", None)
+                    .find(|node| {
+                        node.attr("name")
+                            .ok()
+                            .filter(|&s| s == address_space_name)
+                            .is_some()
+                    });
+
+                if let Some(address_space) = address_space {
+                    let start = util::parse_int(address_space.attr("start")?)?;
+                    base_address = Some(start + offset);
                 }
             }
 
@@ -58,6 +75,7 @@ pub fn parse_list(
                     .ok()
                     .cloned()
                     .and_then(|d| if !d.is_empty() { Some(d) } else { None }),
+                base_address,
                 registers,
             })
         }
